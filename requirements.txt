@@ -2,5 +2,5 @@ fastapi==0.141.1
 uvicorn==0.53.0
 Jinja2==3.1.6
 python-multipart==0.0.32
-pypdf==6.9.2
+pypdf==6.21.4
 tzdata==2026.5
