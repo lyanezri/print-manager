@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>{{ catalog.shop_name }} — Gestor y Calculadora de Impresiones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card-active {
+      border-color: #2563eb !important;
+      background-color: #eff6ff !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    .tab-active {
+      background-color: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-28 md:pb-12">
+
+  <!-- Barra Superior -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-lg border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-2xl shadow-inner">
+          🖨️
+        </div>
+        <div>
+          <h1 id="headerShopName" class="text-lg md:text-xl font-extrabold tracking-tight leading-tight">
+            {{ catalog.shop_name }}
+          </h1>
+          <p id="headerSubtitle" class="text-xs text-slate-300">
+            {{ catalog.subtitle }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Mini Resumen de Caja en Vivo -->
+      <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+        <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-1.5 flex items-center gap-2">
+          <span class="text-emerald-400 font-bold">Hoy:</span>
+          <span id="topTodayPaid" class="font-extrabold text-white">$0</span>
+        </div>
+        <div id="topPendingBadge" class="bg-amber-500/20 border border-amber-400/40 text-amber-300 rounded-xl px-3 py-1.5 flex items-center gap-1.5 cursor-pointer" onclick="switchTab('history')">
+          <span>⏳ Por cobrar:</span>
+          <span id="topPendingAmount" class="font-extrabold">$0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pestañas de Navegación -->
+    <div class="bg-slate-800/70 border-t border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 py-2 flex gap-2 overflow-x-auto">
+        <button id="tabBtn-pos" onclick="switchTab('pos')" class="tab-active px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 whitespace-nowrap">
+          <span>🧮</span> Calculadora / Cobrar
+        </button>
+        <button id="tabBtn-history" onclick="switchTab('history')" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-700/50 transition flex items-center gap-2 whitespace-nowrap">
+          <span>📒</span> Caja e Historial
+          <span id="historyCountBadge" class="bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button id="tabBtn-settings" onclick="switchTab('settings')" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-700/50 transition flex items-center gap-2 whitespace-nowrap">
+          <span>⚙️</span> Configurar Precios
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast de Notificación -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 text-sm font-semibold">
+    <span id="toastIcon">✅</span>
+    <span id="toastText">Acción completada</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PESTAÑA 1: CALCULADORA / POS RÁPIDO                                       -->
+  <!-- ========================================================================= -->
+  <main id="tab-pos" class="max-w-7xl mx-auto px-4 pt-5">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Columna Izquierda: Constructor Rápido de Impresión + Servicios (7 cols) -->
+      <div class="lg:col-span-7 space-y-5">
+
+        <!-- 1. Lector Automático de Archivo PDF / Imagen -->
+        <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📄</span>
+              <div>
+                <h2 class="text-base font-extrabold text-slate-800">¿Te mandaron un PDF o imagen por WhatsApp?</h2>
+                <p class="text-xs text-slate-500">Ábrelo aquí y contamos las páginas automáticamente</p>
+              </div>
+            </div>
+            <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-blue-200 transition flex items-center gap-2">
+              <span>📂 Elegir archivo PDF / Foto</span>
+              <input id="fileInspectorInput" type="file" accept=".pdf,image/*" class="hidden" onchange="handleFileInspect(event)" />
+            </label>
+          </div>
+          <div id="fileInspectorResult" class="hidden bg-blue-50/80 border border-blue-200 rounded-xl p-3 text-xs sm:text-sm text-blue-950 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="font-extrabold" id="inspectedFileName">documento.pdf</span>
+              <span class="mx-1">·</span>
+              <span id="inspectedFileDetails" class="font-semibold text-blue-700">10 páginas detectadas</span>
+            </div>
+            <span class="text-xs bg-blue-600 text-white font-bold px-2.5 py-1 rounded-lg">¡Páginas cargadas abajo!</span>
+          </div>
+        </section>
+
+        <!-- 2. Calculadora de Impresiones y Fotocopias -->
+        <section class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <span>🖨️</span> 1. Armar Impresión o Fotocopia
+            </h2>
+            <span id="liveTierPill" class="text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
+              Tarifa normal
+            </span>
+          </div>
+
+          <!-- Paso A: Tipo de Impresión / Copia -->
+          <div>
+            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2.5">
+              A. ¿Qué tipo de impresión o copia es?
+            </label>
+            <div id="printModesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Renderizado por JS -->
+            </div>
+          </div>
+
+          <!-- Paso B: Tamaño / Tipo de Papel -->
+          <div>
+            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2.5">
+              B. Tamaño o Tipo de Papel
+            </label>
+            <div id="paperTypesGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <!-- Renderizado por JS -->
+            </div>
+          </div>
+
+          <!-- Paso C: Cantidad de Páginas, Copias y Caras -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            <!-- Páginas del documento -->
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <label class="block text-xs font-bold text-slate-600 mb-1.5">Páginas a imprimir</label>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="adjustPages(-1)" class="w-10 h-11 rounded-xl bg-white border border-slate-300 font-extrabold text-lg hover:bg-slate-100 active:scale-95">−</button>
+                <input id="inputPages" type="number" min="1" max="50000" value="1" oninput="updateLiveBuilder()" class="w-full h-11 text-center font-extrabold text-xl bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button type="button" onclick="adjustPages(1)" class="w-10 h-11 rounded-xl bg-white border border-slate-300 font-extrabold text-lg hover:bg-slate-100 active:scale-95">+</button>
+              </div>
+              <!-- Botones rápidos de cantidad -->
+              <div class="flex flex-wrap gap-1 mt-2">
+                <button type="button" onclick="setPages(1)" class="text-xs px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold">1</button>
+                <button type="button" onclick="setPages(5)" class="text-xs px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold">5</button>
+                <button type="button" onclick="setPages(10)" class="text-xs px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold">10</button>
+                <button type="button" onclick="setPages(20)" class="text-xs px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold">20</button>
+                <button type="button" onclick="setPages(50)" class="text-xs px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold">50</button>
+                <button type="button" onclick="setPages(100)" class="text-xs px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold">100</button>
+              </div>
+            </div>
+
+            <!-- Juegos / Copias del mismo documento -->
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <label class="block text-xs font-bold text-slate-600 mb-1.5">Juegos / Copias iguales</label>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="adjustCopies(-1)" class="w-10 h-11 rounded-xl bg-white border border-slate-300 font-extrabold text-lg hover:bg-slate-100 active:scale-95">−</button>
+                <input id="inputCopies" type="number" min="1" max="5000" value="1" oninput="updateLiveBuilder()" class="w-full h-11 text-center font-extrabold text-xl bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button type="button" onclick="adjustCopies(1)" class="w-10 h-11 rounded-xl bg-white border border-slate-300 font-extrabold text-lg hover:bg-slate-100 active:scale-95">+</button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-2">
+                Total caras: <strong id="builderTotalPages" class="text-slate-800">1</strong>
+              </p>
+            </div>
+
+            <!-- Simple Faz vs Doble Faz -->
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+              <label class="block text-xs font-bold text-slate-600 mb-1.5">Caras de la hoja</label>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" id="btnSimplex" onclick="setDuplex(false)" class="py-2.5 px-2 rounded-xl font-bold text-xs border transition card-active">
+                  📄 1 Cara<br/><span class="text-[10px] font-normal">Simple faz</span>
+                </button>
+                <button type="button" id="btnDuplex" onclick="setDuplex(true)" class="py-2.5 px-2 rounded-xl font-bold text-xs border border-slate-200 bg-white transition">
+                  🔄 2 Caras<br/><span class="text-[10px] font-normal">Ambos lados</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-2">
+                Hojas físicas: <strong id="builderPhysicalSheets" class="text-blue-700">1 hoja</strong>
+              </p>
+            </div>
+          </div>
+
+          <!-- Barra de Previsualización Inmediata y Botón Agregar -->
+          <div class="bg-slate-900 text-white rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div class="text-xs text-slate-300 font-medium" id="builderBreakdownText">
+                1 pág. × $150 c/u (1 hoja física)
+              </div>
+              <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 tracking-tight" id="builderPreviewPrice">
+                $150
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+              <button type="button" onclick="addCurrentPrintToCart()" class="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-base">
+                <span>➕ Agregar al Cobro</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Botones Rápidos de Servicios Extra (Anillados, Plastificados, Trámites, etc.) -->
+        <section class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <span>✨</span> 2. Agregar Servicios Rápidos (1 toque)
+            </h2>
+            <span class="text-xs text-slate-500">Toca cualquiera para sumarlo al ticket</span>
+          </div>
+
+          <div id="extraServicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- Renderizado por JS -->
+          </div>
+
+          <!-- Cargo manual libre (por si piden algo especial) -->
+          <div class="pt-3 border-t border-slate-100">
+            <p class="text-xs font-bold text-slate-500 mb-2">➕ ¿Otro cobro especial o monto libre?</p>
+            <div class="flex flex-wrap sm:flex-nowrap gap-2">
+              <input id="customServiceName" type="text" placeholder="Ej: Redacción currículum, sobre, etc." class="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input id="customServicePrice" type="number" min="0" step="50" placeholder="Precio $" class="w-32 px-3.5 py-2.5 text-sm font-bold rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button type="button" onclick="addCustomServiceToCart()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition whitespace-nowrap">
+                + Sumar
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Columna Derecha: Ticket / Total a Cobrar + Calculadora de Vuelto (5 cols) -->
+      <div class="lg:col-span-5 lg:sticky lg:top-28 space-y-5">
+        <section class="bg-white rounded-3xl p-5 sm:p-6 shadow-md border-2 border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <span>🧾</span> Detalle del Cobro Actual
+              </h2>
+              <p class="text-xs text-slate-500" id="cartMetaSummary">0 ítems en la lista</p>
+            </div>
+            <button type="button" onclick="clearCart()" class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition">
+              🗑️ Limpiar todo
+            </button>
+          </div>
+
+          <!-- Lista de ítems del carrito -->
+          <div id="cartItemsContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            <!-- Renderizado por JS -->
+          </div>
+
+          <!-- Descuento / Atención opcional -->
+          <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between gap-2 text-sm">
+              <label for="manualDiscountInput" class="text-xs font-bold text-slate-600">Descuento / Atención ($):</label>
+              <input id="manualDiscountInput" type="number" min="0" step="50" value="0" oninput="renderCart()" class="w-28 text-right font-bold px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-sm" />
+            </div>
+
+            <div class="flex items-baseline justify-between pt-2 border-t border-slate-200">
+              <span class="text-base font-extrabold text-slate-800">TOTAL A COBRAR:</span>
+              <span id="cartFinalTotal" class="text-3xl sm:text-4xl font-black text-blue-700 tracking-tight">$0</span>
+            </div>
+          </div>
+
+          <!-- Calculadora de Vuelto en Efectivo -->
+          <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-emerald-900">💵 ¿Paga con efectivo? Calcular vuelto:</span>
+              <div class="flex gap-1">
+                <button type="button" onclick="setCashPaid(1000)" class="text-[11px] font-bold bg-white border border-emerald-300 px-2 py-0.5 rounded-lg hover:bg-emerald-100">$1.000</button>
+                <button type="button" onclick="setCashPaid(2000)" class="text-[11px] font-bold bg-white border border-emerald-300 px-2 py-0.5 rounded-lg hover:bg-emerald-100">$2.000</button>
+                <button type="button" onclick="setCashPaid(5000)" class="text-[11px] font-bold bg-white border border-emerald-300 px-2 py-0.5 rounded-lg hover:bg-emerald-100">$5.000</button>
+                <button type="button" onclick="setCashPaid(10000)" class="text-[11px] font-bold bg-white border border-emerald-300 px-2 py-0.5 rounded-lg hover:bg-emerald-100">$10.000</button>
+                <button type="button" onclick="setCashPaid(20000)" class="text-[11px] font-bold bg-white border border-emerald-300 px-2 py-0.5 rounded-lg hover:bg-emerald-100">$20.000</button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <input id="cashReceivedInput" type="number" min="0" step="100" placeholder="Monto con que paga $" oninput="updateChangeDisplay()" class="w-44 px-3 py-1.5 text-sm font-bold rounded-xl border border-emerald-300 bg-white focus:outline-none" />
+              <div class="text-right">
+                <span class="text-xs text-emerald-800 block">Vuelto a entregar:</span>
+                <span id="cashChangeOutput" class="text-lg font-black text-emerald-700">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Datos opcionales del cliente y botones de registro -->
+          <div class="space-y-2.5 pt-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input id="jobCustomerName" type="text" placeholder="Nombre cliente / vecino (opcional)" class="px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input id="jobNote" type="text" placeholder="Nota (ej: retirar a las 18h)" class="px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+              <button type="button" onclick="saveJob('paid', 'efectivo')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 px-3 rounded-2xl shadow transition flex flex-col items-center justify-center">
+                <span class="text-sm sm:text-base">💵 Cobrado Efectivo</span>
+                <span class="text-[11px] font-normal text-emerald-100">Guardar en caja</span>
+              </button>
+              <button type="button" onclick="saveJob('paid', 'transferencia')" class="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-3 rounded-2xl shadow transition flex flex-col items-center justify-center">
+                <span class="text-sm sm:text-base">📲 Cobrado Transfer.</span>
+                <span class="text-[11px] font-normal text-blue-100">Guardar en caja</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <button type="button" onclick="saveJob('pending', 'pendiente')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2.5 px-3 rounded-xl transition text-xs sm:text-sm flex items-center justify-center gap-1.5">
+                <span>⏳ Dejar Pendiente / Fiado</span>
+              </button>
+              <button type="button" onclick="copyWhatsAppQuote()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl transition text-xs sm:text-sm flex items-center justify-center gap-1.5">
+                <span>📋 Copiar para WhatsApp</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- PESTAÑA 2: CAJA E HISTORIAL DE TRABAJOS                                   -->
+  <!-- ========================================================================= -->
+  <section id="tab-history" class="hidden max-w-7xl mx-auto px-4 pt-5 space-y-6">
+    <!-- Tarjetas de Resumen -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <span class="text-xs font-bold uppercase text-slate-400">Recaudado Hoy</span>
+        <p id="statTodayPaid" class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">$0</p>
+        <p id="statTodayMeta" class="text-xs text-slate-500 mt-1">0 trabajos · 0 hojas usadas</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <span class="text-xs font-bold uppercase text-slate-400">Esta Semana</span>
+        <p id="statWeekPaid" class="text-2xl sm:text-3xl font-black text-slate-800 mt-1">$0</p>
+        <p id="statWeekMeta" class="text-xs text-slate-500 mt-1">0 trabajos cobrados</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <span class="text-xs font-bold uppercase text-slate-400">Este Mes</span>
+        <p id="statMonthPaid" class="text-2xl sm:text-3xl font-black text-blue-700 mt-1">$0</p>
+        <p id="statMonthMeta" class="text-xs text-slate-500 mt-1">0 hojas impresas en el mes</p>
+      </div>
+      <div class="bg-amber-50 rounded-2xl p-4 shadow-sm border border-amber-200">
+        <span class="text-xs font-bold uppercase text-amber-800">Pendientes por Cobrar</span>
+        <p id="statPendingTotal" class="text-2xl sm:text-3xl font-black text-amber-600 mt-1">$0</p>
+        <p id="statPendingCount" class="text-xs text-amber-800 mt-1">0 encargos pendientes</p>
+      </div>
+    </div>
+
+    <!-- Lista de Trabajos -->
+    <div class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-extrabold text-slate-900">📋 Últimos Trabajos y Cobros</h2>
+        <div class="flex gap-2">
+          <button type="button" onclick="filterHistory('all')" id="filterBtn-all" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-900 text-white">Todos</button>
+          <button type="button" onclick="filterHistory('pending')" id="filterBtn-pending" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900">⏳ Solo Pendientes</button>
+          <button type="button" onclick="filterHistory('paid')" id="filterBtn-paid" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-900">✅ Solo Pagados</button>
+        </div>
+      </div>
+
+      <div id="jobsHistoryList" class="space-y-3">
+        <!-- Renderizado por JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PESTAÑA 3: CONFIGURADOR DE PRECIOS Y TRAMOS                               -->
+  <!-- ========================================================================= -->
+  <section id="tab-settings" class="hidden max-w-5xl mx-auto px-4 pt-5 space-y-6">
+    <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-xl font-extrabold text-slate-900">⚙️ Configurar Tarifario de la Casa</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Cambia cualquier precio o descuento por cantidad y presiona "Guardar Cambios".</p>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="resetCatalogToDefaults()" class="text-xs font-bold text-slate-600 hover:text-rose-600 px-3 py-2 rounded-xl border border-slate-300 hover:border-rose-300 transition">
+            Restaurar valores de fábrica
+          </button>
+          <button type="button" onclick="saveSettingsCatalog()" class="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl shadow transition">
+            💾 Guardar Cambios
+          </button>
+        </div>
+      </div>
+
+      <!-- Ajustes Generales -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nombre del Negocio / Casa</label>
+          <input id="cfgShopName" type="text" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Descuento Doble Faz (por cara $)</label>
+          <input id="cfgDuplexDiscount" type="number" min="0" step="5" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold" />
+          <p class="text-[11px] text-slate-400 mt-1">Se descuenta por página cuando imprimen por ambos lados.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Monto mínimo por trabajo ($)</label>
+          <input id="cfgMinJobAmount" type="number" min="0" step="50" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold" />
+        </div>
+      </div>
+
+      <!-- Precios y Tramos de Impresión / Fotocopia -->
+      <div class="space-y-4 pt-3 border-t border-slate-100">
+        <h3 class="text-base font-extrabold text-slate-800">🖨️ Tarifas de Impresión y Fotocopia por Tramos de Cantidad</h3>
+        <div id="settingsPrintModesContainer" class="space-y-4">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <!-- Tipos de Papel y Recargo por Hoja -->
+      <div class="space-y-3 pt-3 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-extrabold text-slate-800">📄 Tipos de Papel (Recargo extra por hoja física)</h3>
+          <button type="button" onclick="addPaperTypeRow()" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl">+ Agregar Papel</button>
+        </div>
+        <div id="settingsPapersContainer" class="space-y-2">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <!-- Servicios Extra -->
+      <div class="space-y-3 pt-3 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-extrabold text-slate-800">✨ Botones de Servicios Extra (Anillados, Plastificados, etc.)</h3>
+          <button type="button" onclick="addExtraServiceRow()" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl">+ Agregar Servicio</button>
+        </div>
+        <div id="settingsServicesContainer" class="space-y-2">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex justify-end">
+        <button type="button" onclick="saveSettingsCatalog()" class="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-base px-8 py-3 rounded-2xl shadow-lg transition">
+          💾 Guardar Todos los Precios
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Script Principal de la Aplicación -->
+  <script>
+    let STATE = {
+      catalog: {{ catalog | tojson }},
+      stats: {{ stats | tojson }},
+      jobs: {{ recent_jobs | tojson }},
+      historyFilter: 'all',
+      builder: {
+        mode_id: ({{ catalog.print_modes | tojson }}[0] || {}).id || 'bn_print',
+        paper_id: ({{ catalog.paper_types | tojson }}[0] || {}).id || 'carta',
+        pages: 1,
+        copies: 1,
+        duplex: false
+      },
+      cart: []
+    };
+
+    function formatMoney(amount) {
+      const sym = (STATE.catalog && STATE.catalog.currency_symbol) || '$';
+      const val = Math.round(Number(amount) || 0);
+      return sym + val.toLocaleString('es-CL');
+    }
+
+    function showToast(text, icon = '✅') {
+      const el = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastText').textContent = text;
+      el.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function switchTab(tabName) {
+      ['pos', 'history', 'settings'].forEach(t => {
+        const panel = document.getElementById(`tab-${t}`);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+          btn.classList.add('tab-active');
+          btn.classList.remove('text-slate-300');
+        } else {
+          panel.classList.add('hidden');
+          btn.classList.remove('tab-active');
+          btn.classList.add('text-slate-300');
+        }
+      });
+      if (tabName === 'settings') {
+        renderSettingsEditor();
+      } else if (tabName === 'history') {
+        renderStatsAndHistory();
+      }
+    }
+
+    function resolveTier(tiers, totalPages) {
+      const qty = Math.max(1, parseInt(totalPages || 1, 10));
+      const sorted = [...(tiers || [])].sort((a, b) => Number(a.min_qty) - Number(b.min_qty));
+      let chosen = sorted[0] || { min_qty: 1, max_qty: null, unit_price: 100 };
+      for (const t of sorted) {
+        const minQ = Number(t.min_qty || 1);
+        const maxQ = t.max_qty === null || t.max_qty === '' || t.max_qty === undefined ? null : Number(t.max_qty);
+        if (qty >= minQ && (maxQ === null || qty <= maxQ)) {
+          chosen = t;
+          break;
+        }
+        if (qty >= minQ) chosen = t;
+      }
+      return chosen;
+    }
+
+    function computePrintLine(item) {
+      const pages = Math.max(1, parseInt(item.pages || 1, 10));
+      const copies = Math.max(1, parseInt(item.copies || 1, 10));
+      const totalPages = pages * copies;
+      const duplex = Boolean(item.duplex);
+      const mode = (STATE.catalog.print_modes || []).find(m => m.id === item.mode_id) || STATE.catalog.print_modes[0];
+      const paper = (STATE.catalog.paper_types || []).find(p => p.id === item.paper_id) || STATE.catalog.paper_types[0];
+
+      const sheetsPerCopy = duplex ? Math.ceil(pages / 2) : pages;
+      const totalSheets = sheetsPerCopy * copies;
+      const tier = resolveTier(mode.tiers, totalPages);
+      const basePrice = Number(tier.unit_price || 0);
+      const duplexDisc = (duplex && pages > 1) ? Number(STATE.catalog.duplex_discount_per_page || 0) : 0;
+      const effectivePagePrice = Math.max(10, basePrice - duplexDisc);
+      const paperExtra = Number(paper.extra_per_sheet || 0);
+
+      const lineTotal = (totalPages * effectivePagePrice) + (totalSheets * paperExtra);
+      const tierLabel = tier.max_qty ? `${tier.min_qty} a ${tier.max_qty} págs.` : `${tier.min_qty}+ págs.`;
+
+      return {
+        kind: 'print',
+        mode_id: mode.id,
+        mode_name: mode.name,
+        paper_id: paper.id,
+        paper_name: paper.name,
+        pages,
+        copies,
+        total_pages: totalPages,
+        duplex,
+        total_sheets: totalSheets,
+        effective_page_price: effectivePagePrice,
+        paper_extra_per_sheet: paperExtra,
+        tier_label: tierLabel,
+        tier_applied: Number(tier.min_qty) > 1,
+        line_total: lineTotal,
+        label: `${mode.short_name || mode.name} · ${paper.short_name || paper.name} · ${duplex ? 'Doble Faz' : 'Simple Faz'}`
+      };
+    }
+
+    function renderBuilderSelectors() {
+      const modesGrid = document.getElementById('printModesGrid');
+      modesGrid.innerHTML = (STATE.catalog.print_modes || []).map(mode => {
+        const active = STATE.builder.mode_id === mode.id;
+        const firstPrice = (mode.tiers && mode.tiers[0]) ? formatMoney(mode.tiers[0].unit_price) : '';
+        const bulkTier = (mode.tiers && mode.tiers.length > 1) ? mode.tiers[mode.tiers.length - 1] : null;
+        const bulkText = bulkTier ? `Desde ${formatMoney(bulkTier.unit_price)} por mayor` : 'Precio fijo';
+        return `
+          <button type="button" onclick="selectMode('${mode.id}')"
+            class="text-left p-3.5 rounded-2xl border-2 transition flex items-center justify-between ${active ? 'card-active' : 'border-slate-200 bg-white hover:border-slate-300'}">
+            <div>
+              <div class="font-extrabold text-sm sm:text-base text-slate-900">${mode.name}</div>
+              <div class="text-xs text-slate-500 mt-0.5">${bulkText}</div>
+            </div>
+            <div class="text-right pl-2">
+              <span class="text-base sm:text-lg font-black text-blue-700">${firstPrice}</span>
+              <span class="block text-[10px] text-slate-400">c/pág.</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      const papersGrid = document.getElementById('paperTypesGrid');
+      papersGrid.innerHTML = (STATE.catalog.paper_types || []).map(paper => {
+        const active = STATE.builder.paper_id === paper.id;
+        const extra = Number(paper.extra_per_sheet || 0);
+        const extraBadge = extra > 0 ? `+${formatMoney(extra)}/hoja` : 'Incluido';
+        return `
+          <button type="button" onclick="selectPaper('${paper.id}')"
+            class="p-2.5 rounded-xl border-2 text-left transition ${active ? 'card-active' : 'border-slate-200 bg-white hover:border-slate-300'}">
+            <div class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${paper.short_name || paper.name}</div>
+            <div class="text-[11px] ${extra > 0 ? 'text-blue-600 font-bold' : 'text-slate-400'}">${extraBadge}</div>
+          </button>
+        `;
+      }).join('');
+
+      const servicesGrid = document.getElementById('extraServicesGrid');
+      servicesGrid.innerHTML = (STATE.catalog.extra_services || []).map(svc => `
+        <button type="button" onclick="addExtraServiceToCart('${svc.id}')"
+          class="p-3 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 active:scale-98 transition flex items-center justify-between text-left group">
+          <div>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">${svc.category || 'Servicio'}</span>
+            <span class="font-bold text-sm text-slate-800 group-hover:text-blue-900">${svc.name}</span>
+          </div>
+          <span class="font-black text-sm sm:text-base text-blue-700 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-sm">
+            +${formatMoney(svc.unit_price)}
+          </span>
+        </button>
+      `).join('');
+    }
+
+    function selectMode(id) {
+      STATE.builder.mode_id = id;
+      renderBuilderSelectors();
+      updateLiveBuilder();
+    }
+
+    function selectPaper(id) {
+      STATE.builder.paper_id = id;
+      renderBuilderSelectors();
+      updateLiveBuilder();
+    }
+
+    function setPages(val) {
+      document.getElementById('inputPages').value = Math.max(1, val);
+      updateLiveBuilder();
+    }
+
+    function adjustPages(delta) {
+      const inp = document.getElementById('inputPages');
+      inp.value = Math.max(1, (parseInt(inp.value || 1, 10) + delta));
+      updateLiveBuilder();
+    }
+
+    function adjustCopies(delta) {
+      const inp = document.getElementById('inputCopies');
+      inp.value = Math.max(1, (parseInt(inp.value || 1, 10) + delta));
+      updateLiveBuilder();
+    }
+
+    function setDuplex(isDuplex) {
+      STATE.builder.duplex = Boolean(isDuplex);
+      const sBtn = document.getElementById('btnSimplex');
+      const dBtn = document.getElementById('btnDuplex');
+      if (STATE.builder.duplex) {
+        dBtn.classList.add('card-active');
+        sBtn.classList.remove('card-active');
+      } else {
+        sBtn.classList.add('card-active');
+        dBtn.classList.remove('card-active');
+      }
+      updateLiveBuilder();
+    }
+
+    function updateLiveBuilder() {
+      STATE.builder.pages = Math.max(1, parseInt(document.getElementById('inputPages').value || 1, 10));
+      STATE.builder.copies = Math.max(1, parseInt(document.getElementById('inputCopies').value || 1, 10));
+
+      const preview = computePrintLine(STATE.builder);
+      document.getElementById('builderTotalPages').textContent = `${preview.total_pages} ${preview.total_pages === 1 ? 'página' : 'páginas'}`;
+      document.getElementById('builderPhysicalSheets').textContent = `${preview.total_sheets} ${preview.total_sheets === 1 ? 'hoja' : 'hojas'}`;
+      document.getElementById('builderPreviewPrice').textContent = formatMoney(preview.line_total);
+
+      let breakdown = `${preview.total_pages} pág. × ${formatMoney(preview.effective_page_price)} c/u`;
+      if (preview.paper_extra_per_sheet > 0) {
+        breakdown += ` + papel (${preview.total_sheets} h. × ${formatMoney(preview.paper_extra_per_sheet)})`;
+      }
+      document.getElementById('builderBreakdownText').textContent = breakdown;
+
+      const pill = document.getElementById('liveTierPill');
+      if (preview.tier_applied) {
+        pill.textContent = `🎉 Descuento por cantidad (${preview.tier_label}): ${formatMoney(preview.effective_page_price)} c/u`;
+        pill.className = 'text-xs font-extrabold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full';
+      } else {
+        pill.textContent = `Tramo ${preview.tier_label}: ${formatMoney(preview.effective_page_price)} c/u`;
+        pill.className = 'text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full';
+      }
+    }
+
+    function addCurrentPrintToCart() {
+      const item = computePrintLine(STATE.builder);
+      STATE.cart.push(item);
+      renderCart();
+      showToast(`Agregado: ${item.label} (${formatMoney(item.line_total)})`);
+    }
+
+    function addExtraServiceToCart(serviceId) {
+      const svc = (STATE.catalog.extra_services || []).find(s => s.id === serviceId);
+      if (!svc) return;
+      const existing = STATE.cart.find(i => i.kind === 'service' && i.service_id === serviceId);
+      if (existing) {
+        existing.quantity += 1;
+        existing.line_total = existing.quantity * existing.unit_price;
+      } else {
+        STATE.cart.push({
+          kind: 'service',
+          service_id: svc.id,
+          name: svc.name,
+          label: svc.name,
+          quantity: 1,
+          unit_price: Number(svc.unit_price || 0),
+          line_total: Number(svc.unit_price || 0)
+        });
+      }
+      renderCart();
+      showToast(`Agregado: ${svc.name}`);
+    }
+
+    function addCustomServiceToCart() {
+      const nameInput = document.getElementById('customServiceName');
+      const priceInput = document.getElementById('customServicePrice');
+      const name = (nameInput.value || '').trim() || 'Cargo Especial';
+      const price = Math.max(0, parseInt(priceInput.value || 0, 10));
+      if (price <= 0) {
+        showToast('Ingresa un precio mayor a $0 para el cargo especial', '⚠️');
+        return;
+      }
+      STATE.cart.push({
+        kind: 'service',
+        service_id: 'custom',
+        custom_name: name,
+        name,
+        label: name,
+        quantity: 1,
+        custom_unit_price: price,
+        unit_price: price,
+        line_total: price
+      });
+      nameInput.value = '';
+      priceInput.value = '';
+      renderCart();
+      showToast(`Agregado: ${name} (${formatMoney(price)})`);
+    }
+
+    function removeCartItem(index) {
+      STATE.cart.splice(index, 1);
+      renderCart();
+    }
+
+    function changeServiceQty(index, delta) {
+      const item = STATE.cart[index];
+      if (!item || item.kind !== 'service') return;
+      item.quantity = Math.max(1, item.quantity + delta);
+      item.line_total = item.quantity * item.unit_price;
+      renderCart();
+    }
+
+    function clearCart() {
+      STATE.cart = [];
+      document.getElementById('manualDiscountInput').value = 0;
+      document.getElementById('cashReceivedInput').value = '';
+      document.getElementById('jobCustomerName').value = '';
+      document.getElementById('jobNote').value = '';
+      renderCart();
+    }
+
+    function getActiveCartSummary() {
+      // Si el carrito está vacío, usamos automáticamente lo que está puesto en la calculadora
+      // para que también puedan cobrar con 1 solo toque sin siquiera apretar "Agregar al Cobro".
+      const items = STATE.cart.length > 0 ? STATE.cart : [computePrintLine(STATE.builder)];
+      const subtotal = items.reduce((acc, it) => acc + Number(it.line_total || 0), 0);
+      const discount = Math.max(0, Math.min(subtotal, parseInt(document.getElementById('manualDiscountInput').value || 0, 10)));
+      const rawTotal = Math.max(0, subtotal - discount);
+      const step = Number(STATE.catalog.rounding_step || 10);
+      let finalTotal = step > 1 ? Math.round(rawTotal / step) * step : rawTotal;
+      const minJob = Number(STATE.catalog.minimum_job_amount || 0);
+      if (finalTotal > 0 && finalTotal < minJob) finalTotal = minJob;
+
+      const totalPages = items.reduce((acc, it) => acc + Number(it.total_pages || 0), 0);
+      const totalSheets = items.reduce((acc, it) => acc + Number(it.total_sheets || 0), 0);
+
+      return { items, subtotal, discount, finalTotal, totalPages, totalSheets, isImplicitSingle: STATE.cart.length === 0 };
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartItemsContainer');
+      const summary = getActiveCartSummary();
+
+      if (STATE.cart.length === 0) {
+        const live = summary.items[0];
+        container.innerHTML = `
+          <div class="p-3.5 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 flex items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-extrabold uppercase text-blue-600 block">Vista directa de la calculadora</span>
+              <div class="font-bold text-sm text-slate-900">${live.label}</div>
+              <div class="text-xs text-slate-600">${live.total_pages} págs. (${live.total_sheets} hojas) × ${formatMoney(live.effective_page_price)}</div>
+            </div>
+            <div class="font-black text-base text-blue-700">${formatMoney(live.line_total)}</div>
+          </div>
+        `;
+        document.getElementById('cartMetaSummary').textContent = `Cálculo directo (${live.total_sheets} hojas físicas)`;
+      } else {
+        container.innerHTML = STATE.cart.map((item, idx) => {
+          if (item.kind === 'print') {
+            return `
+              <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
+                <div>
+                  <div class="font-bold text-sm text-slate-900">${item.label}</div>
+                  <div class="text-xs text-slate-500">
+                    ${item.pages} pág. × ${item.copies} cop. = <strong>${item.total_pages} págs.</strong> (${item.total_sheets} hojas)
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold text-sm sm:text-base text-slate-900">${formatMoney(item.line_total)}</span>
+                  <button type="button" onclick="removeCartItem(${idx})" class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 font-bold text-xs hover:bg-rose-200">✕</button>
+                </div>
+              </div>
+            `;
+          }
+          return `
+            <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
+              <div>
+                <div class="font-bold text-sm text-slate-900">${item.label}</div>
+                <div class="text-xs text-slate-500">${formatMoney(item.unit_price)} c/u</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="changeServiceQty(${idx}, -1)" class="w-6 h-6 rounded bg-white border border-slate-300 text-xs font-bold">−</button>
+                <span class="text-xs font-bold px-1">${item.quantity}</span>
+                <button type="button" onclick="changeServiceQty(${idx}, 1)" class="w-6 h-6 rounded bg-white border border-slate-300 text-xs font-bold">+</button>
+                <span class="font-extrabold text-sm sm:text-base text-slate-900 ml-1">${formatMoney(item.line_total)}</span>
+                <button type="button" onclick="removeCartItem(${idx})" class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 font-bold text-xs hover:bg-rose-200 ml-1">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        document.getElementById('cartMetaSummary').textContent = `${STATE.cart.length} ítem(s) · ${summary.totalSheets} hojas físicas`;
+      }
+
+      document.getElementById('cartFinalTotal').textContent = formatMoney(summary.finalTotal);
+      updateChangeDisplay();
+    }
+
+    function setCashPaid(amount) {
+      document.getElementById('cashReceivedInput').value = amount;
+      updateChangeDisplay();
+    }
+
+    function updateChangeDisplay() {
+      const summary = getActiveCartSummary();
+      const paid = parseInt(document.getElementById('cashReceivedInput').value || 0, 10);
+      const out = document.getElementById('cashChangeOutput');
+      if (!paid || paid <= 0) {
+        out.textContent = '$0';
+        out.className = 'text-lg font-black text-emerald-700';
+        return;
+      }
+      const diff = paid - summary.finalTotal;
+      if (diff < 0) {
+        out.textContent = `Faltan ${formatMoney(Math.abs(diff))}`;
+        out.className = 'text-sm font-black text-rose-600';
+      } else {
+        out.textContent = formatMoney(diff);
+        out.className = 'text-lg font-black text-emerald-700';
+      }
+    }
+
+    async function handleFileInspect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      showToast('Contando páginas del archivo...', '⏳');
+      try {
+        const res = await fetch('/api/inspect-file', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al analizar archivo');
+        const doc = data.document;
+        document.getElementById('inputPages').value = doc.pages;
+        updateLiveBuilder();
+        renderCart();
+
+        const box = document.getElementById('fileInspectorResult');
+        document.getElementById('inspectedFileName').textContent = doc.filename;
+        document.getElementById('inspectedFileDetails').textContent =
+          `${doc.pages} página(s) (${doc.sheets_duplex} hojas en doble faz)`;
+        box.classList.remove('hidden');
+        showToast(`¡Listo! ${doc.pages} páginas cargadas en la calculadora`, '📄');
+      } catch (err) {
+        showToast(err.message || 'No se pudo leer el archivo', '⚠️');
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function copyWhatsAppQuote() {
+      const summary = getActiveCartSummary();
+      const lines = [
+        `🖨️ *Presupuesto — ${STATE.catalog.shop_name}*`,
+        ...summary.items.map(it => {
+          if (it.kind === 'print') {
+            return `• ${it.label}: ${it.total_pages} págs. = *${formatMoney(it.line_total)}*`;
+          }
+          return `• ${it.label} (x${it.quantity}) = *${formatMoney(it.line_total)}*`;
+        })
+      ];
+      if (summary.discount > 0) {
+        lines.push(`• Descuento: -${formatMoney(summary.discount)}`);
+      }
+      lines.push(`✅ *TOTAL A PAGAR: ${formatMoney(summary.finalTotal)}*`);
+      navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        showToast('Resumen copiado para pegar en WhatsApp', '📋');
+      });
+    }
+
+    async function saveJob(status, paymentMethod) {
+      const summary = getActiveCartSummary();
+      const payload = {
+        items: summary.items,
+        manual_discount: summary.discount,
+        customer_name: document.getElementById('jobCustomerName').value || '',
+        note: document.getElementById('jobNote').value || '',
+        payment_method: paymentMethod,
+        status: status
+      };
+      try {
+        const res = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'No se pudo guardar');
+        STATE.stats = data.stats;
+        STATE.jobs.unshift(data.job);
+        clearCart();
+        setPages(1);
+        document.getElementById('inputCopies').value = 1;
+        updateLiveBuilder();
+        renderCart();
+        renderStatsAndHistory();
+        const msg = status === 'paid'
+          ? `¡Venta registrada por ${formatMoney(data.job.final_total)}!`
+          : `Guardado como pendiente (${formatMoney(data.job.final_total)})`;
+        showToast(msg, '🎉');
+      } catch (err) {
+        showToast(err.message, '⚠️');
+      }
+    }
+
+    async function markJobPaid(jobId, method) {
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paid', payment_method: method })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        STATE.stats = data.stats;
+        const idx = STATE.jobs.findIndex(j => j.id === jobId);
+        if (idx >= 0) STATE.jobs[idx] = data.job;
+        renderStatsAndHistory();
+        showToast('Trabajo marcado como pagado', '✅');
+      }
+    }
+
+    async function deleteJobRecord(jobId) {
+      if (!confirm('¿Seguro que quieres eliminar este registro de la caja?')) return;
+      const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        STATE.stats = data.stats;
+        STATE.jobs = STATE.jobs.filter(j => j.id !== jobId);
+        renderStatsAndHistory();
+        showToast('Registro eliminado', '🗑️');
+      }
+    }
+
+    function filterHistory(filter) {
+      STATE.historyFilter = filter;
+      renderStatsAndHistory();
+    }
+
+    function renderStatsAndHistory() {
+      const st = STATE.stats || {};
+      const today = st.today || { paid_total: 0, jobs_count: 0, sheets: 0 };
+      const week = st.week || { paid_total: 0, jobs_count: 0 };
+      const month = st.month || { paid_total: 0, sheets: 0 };
+      const pending = st.pending_overall || { total: 0, count: 0 };
+
+      document.getElementById('topTodayPaid').textContent = formatMoney(today.paid_total);
+      document.getElementById('topPendingAmount').textContent = formatMoney(pending.total);
+      document.getElementById('historyCountBadge').textContent = STATE.jobs.length;
+
+      document.getElementById('statTodayPaid').textContent = formatMoney(today.paid_total);
+      document.getElementById('statTodayMeta').textContent = `${today.jobs_count} trabajo(s) · ${today.sheets} hojas hoy`;
+      document.getElementById('statWeekPaid').textContent = formatMoney(week.paid_total);
+      document.getElementById('statWeekMeta').textContent = `${week.jobs_count} trabajo(s) en la semana`;
+      document.getElementById('statMonthPaid').textContent = formatMoney(month.paid_total);
+      document.getElementById('statMonthMeta').textContent = `${month.sheets} hojas impresas este mes`;
+      document.getElementById('statPendingTotal').textContent = formatMoney(pending.total);
+      document.getElementById('statPendingCount').textContent = `${pending.count} encargo(s) por cobrar`;
+
+      const listEl = document.getElementById('jobsHistoryList');
+      const filtered = STATE.jobs.filter(j => {
+        if (STATE.historyFilter === 'pending') return j.status === 'pending';
+        if (STATE.historyFilter === 'paid') return j.status === 'paid';
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">No hay trabajos registrados en esta vista todavía.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(job => {
+        const dt = new Date(job.created_at);
+        const timeStr = isNaN(dt) ? job.created_at : dt.toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+        const isPending = job.status === 'pending';
+        const statusBadge = isPending
+          ? `<span class="bg-amber-100 text-amber-800 text-xs font-extrabold px-2.5 py-1 rounded-full">⏳ Pendiente de Pago</span>`
+          : `<span class="bg-emerald-100 text-emerald-800 text-xs font-extrabold px-2.5 py-1 rounded-full">✅ Pagado (${job.payment_method})</span>`;
+
+        const itemsDesc = (job.items || []).map(i => i.kind === 'print'
+          ? `${i.label} (${i.total_pages} págs.)`
+          : `${i.label} x${i.quantity}`
+        ).join(' + ');
+
+        return `
+          <div class="p-4 rounded-2xl border ${isPending ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200 bg-slate-50'} flex flex-wrap items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                ${statusBadge}
+                <span class="text-xs text-slate-400 font-medium">${timeStr}</span>
+                ${job.customer_name ? `<span class="text-xs font-extrabold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">👤 ${job.customer_name}</span>` : ''}
+              </div>
+              <div class="text-sm font-bold text-slate-800">${itemsDesc}</div>
+              ${job.note ? `<div class="text-xs text-slate-500">📝 ${job.note}</div>` : ''}
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-black text-slate-900 mr-2">${formatMoney(job.final_total)}</span>
+              ${isPending ? `
+                <button type="button" onclick="markJobPaid(${job.id}, 'efectivo')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl">💵 Efectivo</button>
+                <button type="button" onclick="markJobPaid(${job.id}, 'transferencia')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-2 rounded-xl">📲 Transf.</button>
+              ` : ''}
+              <button type="button" onclick="deleteJobRecord(${job.id})" class="text-xs text-rose-600 hover:bg-rose-100 p-2 rounded-xl" title="Eliminar">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* ===================================================================== */
+    /* EDITOR DE PRECIOS Y CONFIGURACIÓN                                     */
+    /* ===================================================================== */
+    function renderSettingsEditor() {
+      const cat = STATE.catalog;
+      document.getElementById('cfgShopName').value = cat.shop_name || '';
+      document.getElementById('cfgDuplexDiscount').value = cat.duplex_discount_per_page || 0;
+      document.getElementById('cfgMinJobAmount').value = cat.minimum_job_amount || 0;
+
+      const modesEl = document.getElementById('settingsPrintModesContainer');
+      modesEl.innerHTML = (cat.print_modes || []).map((mode, mIdx) => `
+        <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3" data-mode-idx="${mIdx}">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <input type="text" value="${mode.name}" data-field="mode-name" class="font-extrabold text-sm sm:text-base text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-300 w-full sm:w-80" />
+            <span class="text-xs text-slate-400">ID: ${mode.id}</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            ${(mode.tiers || []).map((tier, tIdx) => `
+              <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5" data-tier-idx="${tIdx}">
+                <div class="text-[11px] font-bold text-slate-400 uppercase">Tramo #${tIdx + 1}</div>
+                <div class="flex items-center gap-1.5 text-xs">
+                  <span>Desde</span>
+                  <input type="number" min="1" value="${tier.min_qty}" data-field="tier-min" class="w-16 px-2 py-1 border rounded-lg font-bold text-center" />
+                  <span>hasta</span>
+                  <input type="number" min="1" placeholder="∞" value="${tier.max_qty === null ? '' : tier.max_qty}" data-field="tier-max" class="w-16 px-2 py-1 border rounded-lg font-bold text-center" />
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-xs font-semibold text-slate-600">Precio c/pág ($):</span>
+                  <input type="number" min="1" step="10" value="${tier.unit_price}" data-field="tier-price" class="w-24 px-2.5 py-1 border border-blue-300 bg-blue-50/40 rounded-lg font-extrabold text-right text-blue-900" />
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      const papersEl = document.getElementById('settingsPapersContainer');
+      papersEl.innerHTML = (cat.paper_types || []).map((p, idx) => `
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200" data-paper-row="${idx}">
+          <input type="hidden" data-field="paper-id" value="${p.id}" />
+          <input type="text" data-field="paper-name" value="${p.name}" placeholder="Nombre papel" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold bg-white" />
+          <input type="text" data-field="paper-short" value="${p.short_name || p.name}" placeholder="Nombre corto" class="w-32 px-3 py-1.5 rounded-lg border border-slate-300 text-sm bg-white" />
+          <div class="flex items-center gap-1">
+            <span class="text-xs text-slate-500">Extra $/hoja:</span>
+            <input type="number" min="0" step="10" data-field="paper-extra" value="${p.extra_per_sheet}" class="w-24 px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-bold text-right bg-white" />
+          </div>
+          <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg text-xs font-bold">✕</button>
+        </div>
+      `).join('');
+
+      const servicesEl = document.getElementById('settingsServicesContainer');
+      servicesEl.innerHTML = (cat.extra_services || []).map((s, idx) => `
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200" data-service-row="${idx}">
+          <input type="hidden" data-field="svc-id" value="${s.id}" />
+          <input type="text" data-field="svc-cat" value="${s.category || 'Extra'}" placeholder="Categoría" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-white" />
+          <input type="text" data-field="svc-name" value="${s.name}" placeholder="Nombre del servicio" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold bg-white" />
+          <div class="flex items-center gap-1">
+            <span class="text-xs text-slate-500">Precio $:</span>
+            <input type="number" min="0" step="50" data-field="svc-price" value="${s.unit_price}" class="w-28 px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-extrabold text-right bg-white" />
+          </div>
+          <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg text-xs font-bold">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function addPaperTypeRow() {
+      const container = document.getElementById('settingsPapersContainer');
+      const id = 'papel_' + Date.now();
+      const div = document.createElement('div');
+      div.className = 'flex flex-wrap sm:flex-nowrap items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200';
+      div.innerHTML = `
+        <input type="hidden" data-field="paper-id" value="${id}" />
+        <input type="text" data-field="paper-name" value="Nuevo Papel" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold bg-white" />
+        <input type="text" data-field="paper-short" value="Nuevo" class="w-32 px-3 py-1.5 rounded-lg border border-slate-300 text-sm bg-white" />
+        <div class="flex items-center gap-1">
+          <span class="text-xs text-slate-500">Extra $/hoja:</span>
+          <input type="number" min="0" step="10" data-field="paper-extra" value="100" class="w-24 px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-bold text-right bg-white" />
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg text-xs font-bold">✕</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function addExtraServiceRow() {
+      const container = document.getElementById('settingsServicesContainer');
+      const id = 'svc_' + Date.now();
+      const div = document.createElement('div');
+      div.className = 'flex flex-wrap sm:flex-nowrap items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200';
+      div.innerHTML = `
+        <input type="hidden" data-field="svc-id" value="${id}" />
+        <input type="text" data-field="svc-cat" value="Extra" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-white" />
+        <input type="text" data-field="svc-name" value="Nuevo Servicio" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold bg-white" />
+        <div class="flex items-center gap-1">
+          <span class="text-xs text-slate-500">Precio $:</span>
+          <input type="number" min="0" step="50" data-field="svc-price" value="500" class="w-28 px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-extrabold text-right bg-white" />
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg text-xs font-bold">✕</button>
+      `;
+      container.appendChild(div);
+    }
+
+    async function saveSettingsCatalog() {
+      const updated = JSON.parse(JSON.stringify(STATE.catalog));
+      updated.shop_name = document.getElementById('cfgShopName').value.trim() || updated.shop_name;
+      updated.duplex_discount_per_page = parseInt(document.getElementById('cfgDuplexDiscount').value || 0, 10);
+      updated.minimum_job_amount = parseInt(document.getElementById('cfgMinJobAmount').value || 0, 10);
+
+      document.querySelectorAll('#settingsPrintModesContainer [data-mode-idx]').forEach(modeBox => {
+        const idx = parseInt(modeBox.getAttribute('data-mode-idx'), 10);
+        const modeObj = updated.print_modes[idx];
+        if (!modeObj) return;
+        modeObj.name = modeBox.querySelector('[data-field="mode-name"]').value.trim() || modeObj.name;
+        const tiers = [];
+        modeBox.querySelectorAll('[data-tier-idx]').forEach(tBox => {
+          const minVal = parseInt(tBox.querySelector('[data-field="tier-min"]').value || 1, 10);
+          const maxRaw = tBox.querySelector('[data-field="tier-max"]').value.trim();
+          const maxVal = maxRaw === '' ? null : parseInt(maxRaw, 10);
+          const priceVal = parseInt(tBox.querySelector('[data-field="tier-price"]').value || 100, 10);
+          tiers.push({ min_qty: minVal, max_qty: maxVal, unit_price: priceVal });
+        });
+        modeObj.tiers = tiers;
+      });
+
+      const papers = [];
+      document.querySelectorAll('#settingsPapersContainer > div').forEach(row => {
+        papers.push({
+          id: row.querySelector('[data-field="paper-id"]').value,
+          name: row.querySelector('[data-field="paper-name"]').value.trim(),
+          short_name: row.querySelector('[data-field="paper-short"]').value.trim(),
+          extra_per_sheet: parseInt(row.querySelector('[data-field="paper-extra"]').value || 0, 10)
+        });
+      });
+      updated.paper_types = papers;
+
+      const services = [];
+      document.querySelectorAll('#settingsServicesContainer > div').forEach(row => {
+        services.push({
+          id: row.querySelector('[data-field="svc-id"]').value,
+          category: row.querySelector('[data-field="svc-cat"]').value.trim(),
+          name: row.querySelector('[data-field="svc-name"]').value.trim(),
+          unit_price: parseInt(row.querySelector('[data-field="svc-price"]').value || 0, 10)
+        });
+      });
+      updated.extra_services = services;
+
+      const res = await fetch('/api/catalog', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        STATE.catalog = data.catalog;
+        document.getElementById('headerShopName').textContent = STATE.catalog.shop_name;
+        renderBuilderSelectors();
+        updateLiveBuilder();
+        renderCart();
+        showToast('¡Tarifario actualizado y guardado!', '💾');
+      } else {
+        showToast(data.detail || 'Error al guardar precios', '⚠️');
+      }
+    }
+
+    async function resetCatalogToDefaults() {
+      if (!confirm('¿Restaurar todos los precios a los valores originales?')) return;
+      const res = await fetch('/api/catalog/reset', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        STATE.catalog = data.catalog;
+        renderSettingsEditor();
+        renderBuilderSelectors();
+        updateLiveBuilder();
+        renderCart();
+        showToast('Precios restaurados a valores de fábrica', '🔄');
+      }
+    }
+
+    // Inicialización al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+      renderBuilderSelectors();
+      updateLiveBuilder();
+      renderCart();
+      renderStatsAndHistory();
+    });
+  </script>
+</body>
+</html>

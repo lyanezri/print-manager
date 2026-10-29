@@ -1,0 +1,32 @@
+services:
+  print-manager-web:
+    image: ${PRINT_MANAGER_IMAGE:-ghcr.io/lyanezri/print-manager:latest}
+    container_name: print-manager-web
+    networks:
+      - shared_frontend
+    expose:
+      - "8095"
+    user: "${PRINT_MANAGER_UID:-1000}:${PRINT_MANAGER_GID:-1000}"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    mem_limit: 96m
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 20s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    restart: always
+
+networks:
+  shared_frontend:
+    external: true
+    name: ubuntu_internal
