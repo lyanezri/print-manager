@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 venv/
 .env
+.agents/
 data/
 *.db
 *.db-shm
