@@ -1,37 +1,30 @@
-# Design System Master File — Neo-Brutalist Print Workshop
+# Design System Master File — Raw Swiss Editorial & Tactile Minimal
 
-**Project:** Print Manager Casa (Taller de Imprenta)
-**Style:** Industrial Neo-Brutalism + Bauhaus Print Press
-**Design Dials:** Variance 9/10 (Bold/Tactile) | Motion 6/10 (Mechanical Press) | Density 8/10 (POS Console)
+**Project:** Print Manager Casa
+**Style:** Raw Swiss Grid / Quiet Architectural Minimalism (Dieter Rams / Teenage Engineering / Editorial Paper & Ink)
+**Principles:** Crudo (sin adornos ni colores chillones), Sencillo (cero ruido visual), Elegante (tipografía fina + monoespaciada y líneas de 1px expuestas), Intuitivo (jerarquía inmediata para cualquier persona de la casa).
 
 ---
 
-## 1. Visual Identity & Color Tokens (CMYK + Raw Paper + Ink)
+## 1. Paleta de Materiales (Papel Crudo + Tinta + 1 Acento)
 
-| Role | Light (Raw Paper) | Dark (Carbon Press) | CSS Variable |
-|------|-------------------|---------------------|--------------|
-| Paper / Background | `#F4EFE6` | `#121210` | `--bg-paper` |
-| Card / Surface | `#FFFDF9` | `#1C1B18` | `--bg-card` |
-| Muted / Recessed | `#E8E1D5` | `#262521` | `--bg-muted` |
-| Ink / Foreground | `#111111` | `#F4EFE6` | `--ink` |
-| Secondary Ink | `#4A4740` | `#A8A29E` | `--ink-muted` |
-| Hard Border & Shadow | `#111111` | `#000000` (border `#F4EFE6`) | `--border-ink` |
-| Press Orange (Primary CTA) | `#FF5500` | `#FF661A` | `--accent-orange` |
-| CMYK Cyan | `#0090FF` | `#38BDF8` | `--cmyk-c` |
-| CMYK Magenta | `#FF1E66` | `#FB7185` | `--cmyk-m` |
-| CMYK Yellow | `#FFD000` | `#FACC15` | `--cmyk-y` |
-| Cash Green | `#00C46A` | `#10B981` | `--accent-green` |
+| Rol | Modo Papel (Light) | Modo Carbón (Dark) | Variable CSS |
+|-----|--------------------|--------------------|--------------|
+| Fondo Base (Papel Crudo) | `#F6F5F0` | `#111110` | `--bg` |
+| Superficie / Tarjeta | `#FFFFFF` | `#181816` | `--surface` |
+| Superficie Secundaria | `#EFECE6` | `#22221F` | `--surface-alt` |
+| Tinta Principal | `#111111` | `#F3F2EE` | `--ink` |
+| Tinta Secundaria | `#66645E` | `#9A9890` | `--ink-muted` |
+| Línea Estructural (1px) | `#D6D3CD` | `#2E2E2A` | `--line` |
+| Línea Fuerte / Activa | `#111111` | `#F3F2EE` | `--line-strong` |
+| Acento Funcional (Naranja Braun) | `#D94E1F` | `#E85D2A` | `--accent` |
+| Confirmación / Cobro | `#157F4B` | `#22A063` | `--ok` |
 
-## 2. Typography
-- **Display & UI Headings:** `Space Grotesk` (700–800 weight, tight tracking, uppercase industrial headers)
-- **Numbers, Prices & Ticket Specs:** `JetBrains Mono` (600–800 weight, `tabular-nums`)
+## 2. Tipografía
+- **UI & Encabezados:** `Plus Jakarta Sans` / `Inter` (limpia, humana, pesos 500–700).
+- **Precios, Cantidades y Totales:** `JetBrains Mono` (`tabular-nums`, clara y precisa como una máquina sumadora).
 
-## 3. Structural & Mechanical Rules
-- **Borders:** `2.5px solid var(--border-ink)` on all cards, inputs, and buttons.
-- **Hard Offset Shadows:** `4px 4px 0px var(--shadow-ink)` on cards and primary controls.
-- **Mechanical Press Physics:**
-  - Hover: `transform: translate(-1px, -1px); box-shadow: 5px 5px 0px var(--shadow-ink);`
-  - Active / Click: `transform: translate(3px, 3px); box-shadow: 0px 0px 0px var(--shadow-ink);`
-- **Print Shop Motifs:**
-  - Registration crop marks (`+`) and CMYK calibration bars in header.
-  - Perforated serrated thermal receipt edge on the live quote ticket.
+## 3. Reglas de Interfaz
+- **Bordes expuestos de 1px** (`--line`), sin sombras infladas ni degradados.
+- **Estado seleccionado inequívoco:** El botón activo invierte su color a **Tinta sólida (`#111111`) con texto claro**, logrando contraste instantáneo sin cansar la vista.
+- **Cero jerga técnica:** Lenguaje cotidiano ("¿Qué vamos a imprimir?", "¿Cuántas páginas tiene?", "Total a cobrar").
